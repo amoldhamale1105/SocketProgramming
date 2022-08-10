@@ -42,7 +42,9 @@ int main(int argc, char *argv[])
     /* Receive multiple requests from the same client and respond by sending an ack. Note that this is not a multiclient connection loop */
     while(1)
     {
-        numBytes = recvfrom(sockfd, buf, 1024, 0, (struct sockaddr*)&clientAddr, &clientLen);
+        bzero(buf, 1024);
+        /* This is a blocking call until a client attempts to connect with this server */
+        numBytes = recvfrom(sockfd, buf, 1023, 0, (struct sockaddr*)&clientAddr, &clientLen);
         if (numBytes < 0)
             error("ERROR: Failed to receive data from client");
         
