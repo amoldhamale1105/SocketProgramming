@@ -1,6 +1,4 @@
-cmake_minimum_required(VERSION 3.0.0)
-
-project(Unix_Sockets VERSION 1.0.0)
+project(Unix_Sockets)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin/${PROJECT_NAME})
 file(GLOB SRC_FILES *.c *.cpp)
