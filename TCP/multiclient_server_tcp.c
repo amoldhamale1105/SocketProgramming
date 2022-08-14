@@ -1,11 +1,11 @@
 /**
  * @file multiconnection_server_tcp.c
  * @author Amol Dhamale
- * @brief This code needs improvement. The forking process is imperfect and may result in unpredictable child process behaviour. Will be fixed shortly in another commit
+ * @brief Multiclient server where a child process is spawned for every new client in order to handle requests independently
  * @version 0.1
  * @date 2022-08-09
  * 
- * @copyright Copyright (c) 2022
+ * @copyright Copyright (c) 2022 Amol Dhamale
  * 
  */
 
@@ -15,10 +15,13 @@
 #include <string.h>
 #include <sys/types.h> 
 #include <sys/socket.h>
+#include <sys/signal.h>
+#include <sys/wait.h>
 #include <netinet/in.h>
 
 void dostuff(int);
 void error(const char*);
+void handle_child_exit();
 
 int main(int argc, char *argv[])
 {
@@ -52,6 +55,9 @@ int main(int argc, char *argv[])
     /* If binding succeeds, put the server socket on listen mode to listen to client requests */
     listen(sockfd, 5);
     clientLen = sizeof(clientAddr);
+
+    // Set up signal handler to manage exiting child processes gracefully and prevent zombies
+    signal(SIGCHLD, handle_child_exit);
     
     /* Prepare to accept new clients indefintely. Spawn a new process to process every clients request separately */
     while(1)
@@ -67,10 +73,9 @@ int main(int argc, char *argv[])
         if (pid == 0){ /* Child process */
             close(sockfd);
             dostuff(newsockfd);
+            close(newsockfd);
             exit(0);
         }
-        else /* Parent process */
-            close(newsockfd);
     }
 
     close(sockfd);
@@ -101,6 +106,20 @@ void dostuff(int fd)
     numBytes = write(fd, response, strlen(response));
     if (numBytes < 0)
         error("ERROR: Failed to write to socket");
+}
+
+void handle_child_exit()
+{
+    int wstat;
+    pid_t pid = wait3(&wstat, WNOHANG, NULL);
+
+    if (pid == -1)
+        return;
+    if (WIFEXITED(wstat)){
+        int exit_status = WEXITSTATUS(wstat);
+        if (exit_status != 0)
+            printf("ERROR: Forked service exited with status: %d\n", exit_status);       
+    }
 }
 
 void error(const char *msg)
