@@ -1,7 +1,7 @@
 # SocketProgramming
 Sockets are a fascinating concept as communication media between 2 processes running on the same host using the same filesystem or on totally different hosts and filesystem miles apart but of course connected by a network  
 When I was new to socket programming it was very confusing for me to understand the concept. The code on the internet was either too complex or didn't cover enough    
-It was hard to get hold of some lucid code which could explain the concepts I learnt which I could also play with because admittedly its impossible to learn a software concept properly without getting your hands dirty with it  
+It was hard to get hold of some lucid code which could explain the concepts I learnt and something I could also play with because admittedly its impossible to learn a software concept properly without getting your hands dirty with it  
 This prodded me to create this repo with some socket programming examples in C used to demonstrate how sockets work  
 
 There are primarily 2 socket domains (Internet and Unix)  
