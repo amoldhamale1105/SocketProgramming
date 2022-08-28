@@ -83,7 +83,7 @@ int main(int argc, char *argv[])
          error("ERROR: Failed to read from socket");
     ssize_t file_size = atol(buffer);
 
-    /* Here we can check if file size does not exceed out limit and send an ack accordingly */
+    /* Here we can check if file size does not exceed our limit and send an ack accordingly */
     numBytes = write(sockfd, "y", 1);
     if (numBytes < 0)
          error("ERROR: Failed to write to socket");

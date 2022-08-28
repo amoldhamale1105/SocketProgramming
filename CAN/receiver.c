@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <stdbool.h>
 
 #include <net/if.h>
 #include <sys/ioctl.h>
@@ -52,9 +51,10 @@ int main(int argc, char** argv)
             fprintf(stderr, "Frame dropped!");
             continue;
         }
-
-        printf("ID: 0x%08X Frame size: %d Data bytes: ", frame.can_id, frame.can_dlc);
-        for (size_t i = 0; i < frame.can_dlc; i++)
+        
+        frame.can_id &= ~(CAN_EFF_FLAG | CAN_RTR_FLAG | CAN_ERR_FLAG);
+        printf("ID: 0x%08X Frame size: %d Data bytes: ", frame.can_id, frame.len);
+        for (size_t i = 0; i < frame.len; i++)
         {
             printf("0x%02X ", frame.data[i]);
         }

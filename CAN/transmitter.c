@@ -21,8 +21,8 @@ int main(int argc, char** argv)
 	struct can_frame frame;
 
     /* Check if required number of args are provided to the program */
-    if (argc < 5){
-        fprintf(stderr, "usage: %s <can_interface> <can_id_hex> <databyte_frame_hex> <rep_rate_ms>\n", argv[0]);
+    if (argc < 6){
+        fprintf(stderr, "usage: %s <can_interface> <frame_format> <can_id_hex> <databyte_frame_hex> <rep_rate_ms>\n", argv[0]);
         exit(1);
     }
 
@@ -41,17 +41,18 @@ int main(int argc, char** argv)
     if (bind(sockfd, (const struct sockaddr*)&senderAddr, sizeof(senderAddr)) < 0)
         error("ERROR: Failed to bind socket");
 
-    frame.can_id = (canid_t)strtol(argv[2], NULL, 16);
-    int frameLen = strlen(argv[3])/2 + strlen(argv[3])%2;
-    frame.can_dlc = (unsigned char)(frameLen);
+    frame.can_id = (canid_t)strtol(argv[3], NULL, 16);
+    frame.can_id |= strcasecmp("eff", argv[2]) == 0 ? CAN_EFF_FLAG : 0;
+    int frameLen = strlen(argv[4])/2 + strlen(argv[4])%2;
+    frame.len = (unsigned char)(frameLen);
     
     char dataFrame[frameLen];
     bzero(dataFrame, sizeof(dataFrame));
-    constructDataFrame(argv[3], dataFrame, frameLen);
+    constructDataFrame(argv[4], dataFrame, frameLen);
     bzero(frame.data, 8);
     strcpy(frame.data, dataFrame);
 
-    int repRateMS = atoi(argv[4]);
+    int repRateMS = atoi(argv[5]);
 
     while (1)
     {
