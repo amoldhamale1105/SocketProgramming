@@ -14,9 +14,6 @@
 #include <linux/can/raw.h>
 
 void error(const char*);
-void stop_reception();
-
-bool interrupted = false;
 
 int main(int argc, char** argv)
 {
@@ -47,18 +44,16 @@ int main(int argc, char** argv)
         error("ERROR: Failed to bind socket");
 
     printf("Data received from CAN bus %s:\n(Ctrl+C or SIGINT signal to stop reception)\n", argv[1]);
-
-    signal(SIGINT, stop_reception);
     
-    while (!interrupted)
+    while (1)
     {        
         numBytes = read(sockfd, &frame, sizeof(frame));
         if (numBytes < 0){
-            fprintf(stdout, "Frame dropped!");
+            fprintf(stderr, "Frame dropped!");
             continue;
         }
 
-        printf("ID: 0x%0X Frame size: %d Data bytes: ", frame.can_id, frame.can_dlc);
+        printf("ID: 0x%08X Frame size: %d Data bytes: ", frame.can_id, frame.can_dlc);
         for (size_t i = 0; i < frame.can_dlc; i++)
         {
             printf("0x%02X ", frame.data[i]);
@@ -75,10 +70,4 @@ void error(const char *msg)
 {
     perror(msg);
     exit(1);
-}
-
-void stop_reception()
-{
-    printf("Stopping message reception!\n");
-    interrupted = true;
 }
