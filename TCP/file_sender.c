@@ -69,6 +69,7 @@ int main(int argc, char *argv[])
         error("ERROR on accept");
     printf("Client connected.\nWaiting for client to be ready for download.\n");
 
+    /* Block until the connected client sets target directory for downloading content */
     bzero(buffer, 256);
     numBytes = recv(newsockfd, buffer, 255, 0);
     if (numBytes < 0)
@@ -80,13 +81,14 @@ int main(int argc, char *argv[])
     }
     printf("Client ready to receive files.\n");
     
-    /* Run the file server indefintely. Spawn a new process to process every client request separately */
+    /* Begin the file transfer session with the connected client and continue as long as the client accepts and connection exists */
     while(1)
     {
         bzero(buffer, sizeof(buffer));
         printf("\nEnter filename with absolute path to be sent to the client:\n");
         fgets(buffer, 255, stdin);
 
+        /* Ignore the newline character and compute path length and filename length */
         int path_len = 0, filename_len = 0;
         while (*(buffer+path_len) != '\n')
         {
@@ -96,8 +98,9 @@ int main(int argc, char *argv[])
         {
             filename_len++;
         }
-
         buffer[path_len] = 0;
+        
+        /* Extract the filename to be passed to the client */
         char filename[filename_len];
         bzero(filename, filename_len);
         strcpy(filename, buffer+path_len-filename_len+1);
@@ -106,14 +109,14 @@ int main(int argc, char *argv[])
         if (file_fd < 0)
             error("Failed to open file");
         
-        /* On reception of a valid file, first compute its size */
+        /* Calculate the file size */
         struct stat file_stat;
         if (fstat(file_fd, &file_stat) < 0)
             error("Failed to determine file size");
         ssize_t file_size = file_stat.st_size;
         fprintf(stdout, "File size: %ld\n", file_size);
         
-        /* Send file size to client to confirm if it wants to download */
+        /* Send file size and name to client to confirm if it wants to download */
         bzero(buffer, sizeof(buffer));
         int countLen = sprintf(buffer, "%ld", file_size);
         strncpy(buffer+countLen+1, filename, filename_len);
@@ -140,7 +143,7 @@ int main(int argc, char *argv[])
     close(newsockfd);
     close(sockfd);
     
-    return 0; /* We never get here unless the constant in the text segment in memory magically changes to 0 for the while loop */
+    return 0;
 }
 
 ssize_t transferFile(int out_fd, int in_fd, off_t offset, size_t count)

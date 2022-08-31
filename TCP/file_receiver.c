@@ -46,6 +46,7 @@ int main(int argc, char *argv[])
     bcopy((char *)server->h_addr, (char*)&serverAddr.sin_addr.s_addr, server->h_length);
     serverAddr.sin_port = htons(port);
     
+    /* Connect to the file sender */
     if (connect(sockfd, (struct sockaddr*) &serverAddr, sizeof(serverAddr)) < 0) 
         error("ERROR: Failed to connect to the server");
     printf("Connected to file sender %d:%d\n", serverAddr.sin_addr.s_addr, serverAddr.sin_port);
@@ -60,6 +61,7 @@ int main(int argc, char *argv[])
         path_len++;
     }
 
+    /* Add a leading forward slash for directory in case the user does not mention it */
     if (buffer[path_len-1] != '/'){
         buffer[path_len] = '/';
         path_len++;
@@ -71,14 +73,17 @@ int main(int argc, char *argv[])
     bzero(filepath, sizeof(filepath));
     strcpy(filepath, buffer);
 
+    /* Send a signal to the sender indicating that the client is ready to receive files from it */
     numBytes = write(sockfd, "r", 1);
     if (numBytes < 0)
         error("ERROR: Failed to write to socket");
     
+    /* Receive multiple files from the sender until the connection exists */
     while (1)
     {
         printf("\nWaiting for the server to send a file...\n(Ctrl+C to stop receiving files from server)\n");
-        /* First get the file size and then send an ack to start downloading */
+        
+        /* First get the file meta data like size and name */
         bzero(buffer, sizeof(buffer));
         numBytes = recv(sockfd, buffer, 255, 0);
         if (numBytes < 0)
@@ -90,7 +95,7 @@ int main(int argc, char *argv[])
         }
         strcpy(filepath+path_len, buffer+size_len+1);
 
-        /* Here we can check if file size does not exceed our limit and send an ack accordingly */
+        /* Try opening/creating the file and send an ack accordingly */
         int file_fd = open(filepath, O_WRONLY | O_CREAT | O_TRUNC, 0644);
         if (file_fd < 0)
             error("Failed to open or create file");
