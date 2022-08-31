@@ -27,14 +27,17 @@ int main(int argc, char** argv)
         exit(1);
     }
 
+    /* Create a raw CAN socket with Socket CAN protocol */
     sockfd = socket(AF_CAN, SOCK_RAW, CAN_RAW);
     if (sockfd < 1)
         error("ERROR: Failed to create socket");
 
+    /* Get the CAN interface index based on interface name */
     bzero(&ifaceReq, sizeof(struct ifreq));
     strcpy(ifaceReq.ifr_name, argv[1]);
     ioctl(sockfd, SIOCGIFINDEX, &ifaceReq);
 
+    /* Set the receiver socket CAN struct and bind it to the socket descriptor */
     memset(&receiverAddr, 0, sizeof(struct sockaddr_can));
     receiverAddr.can_family = AF_CAN;
     receiverAddr.can_ifindex = ifaceReq.ifr_ifindex;
@@ -44,6 +47,7 @@ int main(int argc, char** argv)
 
     printf("Data received from CAN bus %s:\n(Ctrl+C or SIGINT signal to stop reception)\n", argv[1]);
     
+    /* Receive all CAN traffic on the specified CAN interface and dump it on the screen */
     while (1)
     {        
         numBytes = read(sockfd, &frame, sizeof(frame));
@@ -52,6 +56,7 @@ int main(int argc, char** argv)
             continue;
         }
         
+        /* These special flags on MSB of the frame can be ignored while outputting the ID */
         frame.can_id &= ~(CAN_EFF_FLAG | CAN_RTR_FLAG | CAN_ERR_FLAG);
         printf("ID: 0x%08X Frame size: %d Data bytes: ", frame.can_id, frame.len);
         for (size_t i = 0; i < frame.len; i++)
