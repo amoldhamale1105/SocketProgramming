@@ -48,63 +48,56 @@ int main(int argc, char *argv[])
     
     if (connect(sockfd, (struct sockaddr*) &serverAddr, sizeof(serverAddr)) < 0) 
         error("ERROR: Failed to connect to the server");
-    printf("Connected to file sender %d:%d\n", serverAddr.sin_addr.s_addr, serverAddr.sin_port);
-
-    printf("\nEnter absolute local directory path to save all files from the sender:\n(Make sure the directory has write permissions for %s)\n", getenv("USER"));
-    fgets(buffer, 255, stdin);
     
+    /* Once connection succeeds, send the filename to be downloaded to the server */
+    printf("Enter the filename with absolute path to be fetched from the server:\n");
+    bzero(buffer, 256);
+    fgets(buffer, 255, stdin);
+
     /* Get the exact path length and filename length and neglect the newline character introduced by fgets */
-    int path_len = 0, filename_len = 0, size_len = 0;
+    int path_len = 0, filename_len = 0;
     while (*(buffer+path_len) != '\n')
     {
         path_len++;
     }
-
-    if (buffer[path_len-1] != '/'){
-        buffer[path_len] = '/';
-        path_len++;
-    }
-    else
-        buffer[path_len] = 0;
-    
-    char filepath[path_len+100];
-    bzero(filepath, sizeof(filepath));
-    strcpy(filepath, buffer);
-
-    numBytes = write(sockfd, "r", 1);
-    if (numBytes < 0)
-        error("ERROR: Failed to write to socket");
-    
-    while (1)
+    while (filename_len < path_len && *(buffer+path_len-filename_len) != '/')
     {
-        printf("\nWaiting for the server to send a file...\n(Ctrl+C to stop receiving files from server)\n");
-        /* First get the file size and then send an ack to start downloading */
-        bzero(buffer, sizeof(buffer));
-        numBytes = recv(sockfd, buffer, 255, 0);
-        if (numBytes < 0)
-            error("ERROR: Failed to read from socket");
-        ssize_t file_size = atol(buffer);
-        while (*(buffer+size_len) != 0)
-        {
-            size_len++;
-        }
-        strcpy(filepath+path_len, buffer+size_len+1);
-
-        /* Here we can check if file size does not exceed our limit and send an ack accordingly */
-        int file_fd = open(filepath, O_WRONLY | O_CREAT | O_TRUNC, 0644);
-        if (file_fd < 0)
-            error("Failed to open or create file");
-        
-        numBytes = write(sockfd, "y", 1);
-        if (numBytes < 0)
-            error("ERROR: Failed to write to socket");
-        
-        printf("Downloading file: %s\n", filepath+path_len);
-        size_t bytes_received = receive_file(file_fd, sockfd, 0, file_size);
-        fprintf(stdout, "Recevied %s of size %ld bytes\n", filepath+path_len, bytes_received);
-        close(file_fd);
+        filename_len++;
     }
+
+    char filename[filename_len];
+    bzero(filename, filename_len);
+    if (filename_len <= 0)
+        error("ERROR: Invalid path or filename");
+    strncpy(filename, buffer+path_len-filename_len+1, filename_len-1);
+
+    /* Send full path to the server for the file to be downloaded */
+    numBytes = write(sockfd, buffer, path_len);
+    if (numBytes < 0)
+         error("ERROR: Failed to write to socket");
     
+    /* First get the file size and then send an ack to start downloading */
+    bzero(buffer, sizeof(buffer));
+    numBytes = recv(sockfd, buffer, 255, 0);
+    if (numBytes < 0)
+         error("ERROR: Failed to read from socket");
+    ssize_t file_size = atol(buffer);
+
+    /* Here we can check if file size does not exceed our limit and send an ack accordingly */
+    int file_fd = open(filename, O_WRONLY | O_CREAT, 0644);
+    if (file_fd < 0)
+        error("Failed to open or create file");
+    
+    numBytes = write(sockfd, "y", 1);
+    if (numBytes < 0)
+         error("ERROR: Failed to write to socket");
+
+    
+    printf("Downloading file: %s\n", filename);
+    size_t bytes_received = receive_file(file_fd, sockfd, 0, file_size);
+    fprintf(stdout, "Recevied file %s of size %ld\n", filename, bytes_received);
+    
+    close(file_fd);
     close(sockfd);
     
     return 0;
