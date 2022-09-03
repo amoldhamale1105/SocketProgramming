@@ -12,7 +12,7 @@
 #include <fcntl.h>
 
 void error(const char*);
-ssize_t receive_file(int,int,off_t,size_t);
+ssize_t receive_file(int,int,loff_t,size_t);
 
 int main(int argc, char *argv[])
 {
@@ -115,7 +115,7 @@ int main(int argc, char *argv[])
     return 0;
 }
 
-ssize_t receive_file(int out_fd, int in_fd, off_t offset, size_t count)
+ssize_t receive_file(int out_fd, int in_fd, loff_t offset, size_t count)
 {
     int pipefd[2];
     ssize_t bytes, bytes_received, bytes_in_pipe;
