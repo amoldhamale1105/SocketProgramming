@@ -85,8 +85,17 @@ int main(int argc, char *argv[])
     while(1)
     {
         bzero(buffer, sizeof(buffer));
-        printf("\nEnter filename with absolute path to be sent to the client:\n");
+        printf("\nEnter filename with absolute path to be sent to the client:\n(Enter \"done\" to stop sending and end the session)\n");
         fgets(buffer, 255, stdin);
+
+        /* Send a payload with size 0 and character 'c' to tell the client that sender operation has completed */
+        if (strncmp(buffer, "done", 4) == 0){
+            numBytes = write(newsockfd, "0\0c", 3);
+            if (numBytes < 0)
+                error("ERROR: Failed to send end session signal");
+            printf("\nEnding file sender session\n");
+            break;
+        }
 
         /* Ignore the newline character and compute path length and filename length */
         int path_len = 0, filename_len = 0;

@@ -81,7 +81,7 @@ int main(int argc, char *argv[])
     /* Receive multiple files from the sender until the connection exists */
     while (1)
     {
-        printf("\nWaiting for the server to send a file...\n(Ctrl+C to stop receiving files from server)\n");
+        printf("\nWaiting for the server to send a file...\n(Wait for the sender to finish or Ctrl+C to stop receiving immediately)\n");
         
         /* First get the file meta data like size and name */
         bzero(buffer, sizeof(buffer));
@@ -89,11 +89,18 @@ int main(int argc, char *argv[])
         if (numBytes < 0)
             error("ERROR: Failed to read from socket");
         ssize_t file_size = atol(buffer);
+        size_len = 0;
         while (*(buffer+size_len) != 0)
         {
             size_len++;
         }
         strcpy(filepath+path_len, buffer+size_len+1);
+
+        /* Check for an end session signal with size 0 and character 'c' payload from the sender */
+        if (file_size == 0 && buffer[size_len+1] == 'c'){
+            printf("\nServer has finished sending all files. Closing receiver session\n");
+            break;
+        }
 
         /* Try opening/creating the file and send an ack accordingly */
         int file_fd = open(filepath, O_WRONLY | O_CREAT | O_TRUNC, 0644);
