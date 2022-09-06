@@ -24,7 +24,7 @@ int main(int argc, char *argv[])
     if ((sockfd = socket(AF_UNIX, SOCK_STREAM, 0)) < 0)
         error("ERROR: Failed to create socket");
 
-    /* Initialize struct memory to zero and then populate the server family and path in sockaddr_in struct */
+    /* Initialize struct memory to zero and then populate the server family and path in sockaddr_un struct */
     bzero((char*)&serverAddr, sizeof(serverAddr));
     serverAddr.sun_family = AF_UNIX;
     strcpy(serverAddr.sun_path, argv[1]);
@@ -41,11 +41,11 @@ int main(int argc, char *argv[])
     newsockfd = accept(sockfd, (struct sockaddr*)&clientAddr, &clientLen);
     if (newsockfd < 0)
         error("ERROR: Failed to establish connection with client");
+    printf("A connection has been established\n");
 
     /* Read from and write to the new socket file descriptor retrieved from acceptance of connection with a client */
     bzero(buf, 100);
     numBytes = read(newsockfd, buf, 99);
-    printf("A connection has been established\n");
     printf("Here is the message from the client: %s\n", buf);
 
     const char* response = "Server response: I got your message";

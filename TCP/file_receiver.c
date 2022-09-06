@@ -10,27 +10,51 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <sys/un.h>
 
 void error(const char*);
 ssize_t receive_file(int,int,loff_t,size_t);
 
 int main(int argc, char *argv[])
 {
-    int sockfd, port, numBytes;
+    int metaSock, newMetaSock, sockfd, port, numBytes, clientLen;
     struct sockaddr_in serverAddr;
+    struct sockaddr_un metaAddr, clientAddr;
     struct hostent *server;
-    char buffer[256];
+    char buffer[256], metaBuf[256];
     
     /* Check if required number of args are provided to the program */
-    if (argc < 3) {
-       fprintf(stderr, "usage: %s <hostname> <port>\n", argv[0]);
+    if (argc < 4) {
+       fprintf(stderr, "usage: %s <hostname> <port> <path/to/unix/socket>\n", argv[0]);
        exit(1);
     }
     port = atoi(argv[2]);
 
+    /* Create a Unix socket (AF_UNIX) and get the socket file descriptor */
+    if ((metaSock = socket(AF_UNIX, SOCK_STREAM, 0)) < 0)
+        error("ERROR: Failed to create meta socket");
+
+    /* Initialize struct memory to zero and then populate the server family and path in sockaddr_un struct */
+    bzero((char*)&metaAddr, sizeof(metaAddr));
+    metaAddr.sun_family = AF_UNIX;
+    strcpy(metaAddr.sun_path, argv[3]);
+
+    /* Bind the socket with the given server parameters */
+    if (bind(metaSock, (struct sockaddr*)&metaAddr, sizeof(metaAddr)) < 0)
+        error("ERROR: Failed to bind with unix socket");
+
+    /* If binding succeeds, put the server socket on listen mode to listen to client requests */
+    listen(metaSock, 5);
+    clientLen = sizeof(clientAddr);
+    printf("Waiting for Qt app to connect...\n");
+    newMetaSock = accept(metaSock, (struct sockaddr*)&clientAddr, &clientLen);
+    if (newMetaSock < 0)
+        error("ERROR: Failed to establish connection with client");
+    printf("Qt app connected to meta data socket. Proceeding to connect with Android\n");
+
     /* Create an internet socket (AF_INET) with TCP protocol and get the socket file descriptor */
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
-    if (sockfd < 0) 
+    if (sockfd < 0)
         error("ERROR: Failed to open socket");
     
     /* Get server information and extract it to the socketaddr_in server structure */
@@ -51,12 +75,16 @@ int main(int argc, char *argv[])
         error("ERROR: Failed to connect to the server");
     printf("Connected to file sender %d:%d\n", serverAddr.sin_addr.s_addr, serverAddr.sin_port);
 
-    printf("\nEnter absolute local directory path to save all files from the sender:\n(Make sure the directory has write permissions for %s)\n", getenv("USER"));
-    fgets(buffer, 255, stdin);
+    bzero(metaBuf, sizeof(metaBuf));
+    numBytes = read(newMetaSock, metaBuf, 255);
+    if (numBytes < 0)
+        error("ERROR: Failed to get dir path from Qt app");
+    strcpy(buffer, metaBuf);
+    printf("Received path from Qt: %s\n",buffer);
     
     /* Get the exact path length and filename length and neglect the newline character introduced by fgets */
     int path_len = 0, filename_len = 0, size_len = 0;
-    while (*(buffer+path_len) != '\n')
+    while (*(buffer+path_len) != '\0')
     {
         path_len++;
     }
@@ -66,8 +94,6 @@ int main(int argc, char *argv[])
         buffer[path_len] = '/';
         path_len++;
     }
-    else
-        buffer[path_len] = 0;
     
     char filepath[path_len+100];
     bzero(filepath, sizeof(filepath));
@@ -115,6 +141,9 @@ int main(int argc, char *argv[])
         size_t bytes_received = receive_file(file_fd, sockfd, 0, file_size);
         fprintf(stdout, "Recevied %s of size %ld bytes\n", filepath+path_len, bytes_received);
         close(file_fd);
+
+        printf("Sending file meta-data to Qt app\n");
+        write(newMetaSock, filepath+path_len, sizeof(filepath)-path_len);
     }
     
     close(sockfd);
