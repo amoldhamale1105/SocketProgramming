@@ -9,6 +9,16 @@
 
 #include <linux/can.h>
 #include <linux/can/raw.h>
+#include <linux/version.h>
+
+/* The can_frame struct was changed in commit hash ea78005
+   The following command obtains closest tag release after the above commit
+   git describe --contains ea78005 => v5.11-rc1 */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5,11,0)
+   #define PAYLOAD_LEN can_dlc
+#else
+   #define PAYLOAD_LEN len
+#endif
 
 void error(const char*);
 void constructDataFrame(const char*,char*,int);
@@ -48,7 +58,7 @@ int main(int argc, char** argv)
     frame.can_id = (canid_t)strtol(argv[3], NULL, 16);
     frame.can_id |= strcasecmp("eff", argv[2]) == 0 ? CAN_EFF_FLAG : 0;
     int frameLen = strlen(argv[4])/2 + strlen(argv[4])%2;
-    frame.len = (unsigned char)(frameLen);
+    frame.PAYLOAD_LEN = (unsigned char)(frameLen);
     
     /* Construct data frame from homogenous character string received on the command line */
     char dataFrame[frameLen];

@@ -12,6 +12,16 @@
 
 #include <linux/can.h>
 #include <linux/can/raw.h>
+#include <linux/version.h>
+
+/* The can_frame struct was changed in commit hash ea78005
+   The following command obtains closest tag release after the above commit
+   git describe --contains ea78005 => v5.11-rc1 */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5,11,0)
+   #define PAYLOAD_LEN can_dlc
+#else
+   #define PAYLOAD_LEN len
+#endif
 
 void error(const char*);
 
@@ -67,8 +77,8 @@ int main(int argc, char** argv)
 
         /* These special flags on MSB of the frame can be ignored while outputting the ID */
         frame.can_id &= ~(CAN_EFF_FLAG | CAN_RTR_FLAG | CAN_ERR_FLAG);
-        printf("ID: 0x%08X Frame size: %d Data bytes: ", frame.can_id, frame.len);
-        for (size_t i = 0; i < frame.len; i++)
+        printf("ID: 0x%08X Frame size: %d Data bytes: ", frame.can_id, frame.PAYLOAD_LEN);
+        for (size_t i = 0; i < frame.PAYLOAD_LEN; i++)
         {
             printf("0x%02X ", frame.data[i]);
         }
