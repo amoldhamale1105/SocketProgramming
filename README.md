@@ -10,6 +10,8 @@ In this project, I have created examples and sample apps for following type of s
 - **CAN** (Raw sockets used to transmit and receive CAN messages using a can interface created by a CAN bus controller)
 - **Netlink** (Raw sockets used mostly for kernel-userspace communication and also for interprocess communication)
 
+**Note:** If you're working with SocketCAN and do not have a real CAN bus to work with, you can create a virtual CAN bus interface using can-utils package. A script `vcan-setup.sh` has been created for the same under *Misc* directory of this repo https://github.com/amoldhamale1105/CodingPlayground
+
 ## Build Instructions
 This project is setup with a hierarchical cmake structure. The top level cmake adds downstream directories which in turn have their own cmake to build the sources enclosed. By default it will generate binaries for all sources within this repo under the `bin` directory  
 
