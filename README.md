@@ -9,6 +9,7 @@ In this project, I have created examples and sample apps for following type of s
 - **Unix** (Stream/Datagram socket residing on the same filesystem as the 2 processes using it to communicate)
 - **CAN** (Raw sockets used to transmit and receive CAN messages using a can interface created by a CAN bus controller)
 - **Netlink** (Raw sockets used mostly for kernel-userspace communication and also for interprocess communication)
+- **Virtio** (Virtio sockets used for communication between host and virtual machine using the virtio-vsock driver and vhost-vsock backend)
 
 **Note:** If you're working with SocketCAN and do not have a real CAN bus to work with, you can create a virtual CAN bus interface using can-utils package. A script `vcan-setup.sh` has been created for the same under *Misc* directory of this repo https://github.com/amoldhamale1105/CodingPlayground
 
