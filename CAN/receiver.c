@@ -68,7 +68,7 @@ int main(int argc, char** argv)
         
         /* These special flags on MSB of the frame can be ignored while outputting the ID */
         frame.can_id &= ~(CAN_EFF_FLAG | CAN_RTR_FLAG | CAN_ERR_FLAG);
-        printf("ID: 0x%08X Frame size: %d Data bytes: ", frame.can_id, frame.PAYLOAD_LEN);
+        printf("ID: 0x%08X DLC: %d Data: ", frame.can_id, frame.PAYLOAD_LEN);
         for (size_t i = 0; i < frame.PAYLOAD_LEN; i++)
         {
             printf("0x%02X ", frame.data[i]);
